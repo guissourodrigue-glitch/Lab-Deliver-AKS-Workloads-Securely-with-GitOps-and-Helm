@@ -80,7 +80,7 @@ jobs:
         git rebase origin/main
         git push
 
-        - name: Wait for Image Tag to Match Run Number
+    - name: Wait for Image Tag to Match Run Number
       run: |
           TARGET_TAG="${{ github.run_number }}"
           echo "Polling for Deployment spec tag to match '$TARGET_TAG'..."
