@@ -79,7 +79,16 @@ jobs:
         git fetch origin
         git rebase origin/main
         git push
-
+    - name: Trigger Flux Reconciliation
+      run: |
+        # Install Flux CLI if not already available
+        curl -s https://fluxcd.io/install.sh | sudo bash || true
+        
+        # Force Flux to reconcile the HelmRelease
+        flux reconcile helmrelease simple-grocery-store -n default --with-source || true
+        
+        # Give Flux time to apply changes
+        sleep 15
     - name: Wait for Image Tag to Match Run Number
       run: |
           TARGET_TAG="${{ github.run_number }}"
