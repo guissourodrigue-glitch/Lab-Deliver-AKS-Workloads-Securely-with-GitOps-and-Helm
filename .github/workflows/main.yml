@@ -80,7 +80,7 @@ jobs:
         git rebase origin/main
         git push
 
-    - name: Wait for Image Tag to Match Run Number
+        - name: Wait for Image Tag to Match Run Number
       run: |
           TARGET_TAG="${{ github.run_number }}"
           echo "Polling for Deployment spec tag to match '$TARGET_TAG'..."
@@ -91,6 +91,11 @@ jobs:
             
             if [ -z "$FULL_IMAGE_SPEC" ]; then
               echo "Attempt $attempt/${{ env.MAX_ATTEMPTS }}: Deployment spec not retrievable. Retrying..."
+              # Debug: Check if deployment exists
+              if [ $attempt -eq 0 ]; then
+                echo "DEBUG: Available deployments in staging namespace:"
+                kubectl get deployments -n staging || echo "Could not retrieve deployments"
+              fi
             elif [ "$CURRENT_TAG" = "$TARGET_TAG" ]; then
               echo "Match found: Image tag is '$CURRENT_TAG'."
               exit 0
@@ -99,10 +104,14 @@ jobs:
             fi
             
             attempt=$((attempt + 1))
-            sleep ${{ env.POLL_INTERVAL }}
+            if [ $attempt -lt ${{ env.MAX_ATTEMPTS }} ]; then
+              sleep ${{ env.POLL_INTERVAL }}
+            fi
           done
           
           echo "Timeout: Tag did not match '$TARGET_TAG' after $(( ${{ env.POLL_INTERVAL }} * ${{ env.MAX_ATTEMPTS }} )) seconds."
+          echo "DEBUG: Final deployment status:"
+          kubectl describe deployment frontend-deployment -n staging || echo "Deployment not found"
           exit 1
 
     - name: Retrieve Load Balancer IP
